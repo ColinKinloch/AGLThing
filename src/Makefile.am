@@ -11,6 +11,6 @@ glThing_CPPFLAGS = \
 	$(GTK_CPPFLAGS) \
 	$(GL_CPPFLAGS)
 glThing_SOURCES = \
-	src/glThing.cpp \
-	src/glThing.hpp \
-	src/MainWindow.hpp
+	src/main.cpp \
+	src/GLThing.cpp \
+	src/GLThing.hpp
