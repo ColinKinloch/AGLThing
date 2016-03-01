@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-autoreconf --install
+autoreconf --force --install --verbose

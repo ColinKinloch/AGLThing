@@ -1,5 +1,9 @@
 glThing
+src/res/glthing.gresource.xml
+
 *.o
+*-resources.c
+*-resources.h
 
 Makefile.in
 

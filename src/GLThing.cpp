@@ -4,43 +4,37 @@
 #include <functional>
 
 #include <gtkmm/glarea.h>
+#include <gtkmm/builder.h>
+
+#include "GLThing-resources.h"
 
 #include "GLThing.hpp"
+#include "Renderer.hpp"
 
 using namespace std;
 
-GLThing::GLThing(): Gtk::Application("org.colinkinloch.GLThing") {}
+GLThing::GLThing(): Gtk::Application("org.colinkinloch.GLThing") {
+  //this->set_resource_base_path("/org/colinkinloch/glthing");
+}
 
 void GLThing::on_startup() {
   Gtk::Application::on_startup();
-  window = new Gtk::ApplicationWindow(Glib::RefPtr<Gtk::Application>(this));
 
-  auto area = new Gtk::GLArea();
+  auto builder = Gtk::Builder::create_from_resource("/org/colinkinloch/glthing/ui/glthing.ui");
+  builder->set_application(Glib::RefPtr<Gtk::Application>(this));
+  builder->get_widget("main-window", window);
+  Renderer* area;
+  builder->get_widget_derived("gl-area", area);
+
+  //window = new Gtk::ApplicationWindow(Glib::RefPtr<Gtk::Application>(this));
+  //window = new Gtk::ApplicationWindow();
+  //window->set_icon_name("preferences-desktop-wallpaper-symbolic");
+
+  this->add_window(*window);
+
+  /*auto area = new Renderer();
   area->set_visible(true);
 
-  /*area->signal_create_context().connect([area]() -> Glib::RefPtr< Gdk::GLContext > {
-    Glib::RefPtr< Gdk::GLContext > gl = area->get_context();
-    gl->make_current();
-    //area->make_current();
-    glClearColor(1.0, 1.0, 0.0, 1.0);
-    return gl;
-  });*/
-
-  area->signal_resize().connect([area](int width, int height){
-    area->make_current();
-    glViewport(0, 0, width, height);
-  });
-
-  area->signal_render().connect([](const Glib::RefPtr< Gdk::GLContext >& gl) -> bool {
-    gl->make_current();
-    glClear(GL_COLOR_BUFFER_BIT);
-    return true;
-  });
-
-  window->add(*area);
+  window->add(*area);*/
   window->show();
-
-  area->make_current();
-  glClearColor(0.0, 0.0, 0.2, 1.0);
-  glClearDepth(1.0);
 }

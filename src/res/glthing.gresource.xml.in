@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/colinkinloch/glthing">
+    <file compressed="true">ui/glthing.ui</file>
+  </gresource>
+</gresources>
