@@ -25,14 +25,17 @@ src/GLThing-resources.c: $(glThing_resource_c_deps)
 		--generate-source "$(builddir)/src/res/glthing.gresource.xml"
 
 glThing_LDADD = \
-	$(GTK_LIBS) \
+	$(SYSTEM_LIBS) \
+	$(GUI_LIBS) \
 	$(GL_LIBS)
 glThing_CFLAGS = \
-	$(GTK_CFLAGS) \
+	$(SYSTEM_CFLAGS) \
+	$(GUI_CFLAGS) \
 	$(GL_CFLAGS)
 glThing_CPPFLAGS = \
 	$(glThing_CFLAGS) \
-	$(GTK_CPPFLAGS) \
+	$(SYSTEM_CPPFLAGS) \
+	$(GUI_CPPFLAGS) \
 	$(GL_CPPFLAGS)
 glThing_SOURCES = \
 	src/main.cpp \

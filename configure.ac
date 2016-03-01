@@ -13,7 +13,8 @@ AC_PATH_PROG(GLIB_COMPILE_RESOURCES, glib-compile-resources)
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror -Wno-portability subdir-objects])
 
-PKG_CHECK_MODULES([GTK], [gtkmm-3.0])
+PKG_CHECK_MODULES([SYSTEM], [giomm-2.4])
+PKG_CHECK_MODULES([GUI], [gtkmm-3.0])
 PKG_CHECK_MODULES([GL], [epoxy])
 
 AC_CONFIG_FILES([

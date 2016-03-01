@@ -12,6 +12,9 @@
         <object class="GtkLabel">
           <property name="visible">True</property>
           <property name="label">GL Thing</property>
+          <attributes>
+            <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+          </attributes>
         </object>
       </child>
       <child>
