@@ -15,6 +15,10 @@ struct Attribute {
   GLint id;
   std::string name;
 };
+struct Uniform {
+  GLint id;
+  std::string name;
+};
 
 class Renderer: public Gtk::GLArea {
 public:
@@ -28,9 +32,11 @@ public:
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
 protected:
+  GLuint program;
   GLuint* vao;
   GLuint* buffers;
   std::vector<Attribute> attributes;
+  std::map<std::string, Uniform> uniforms;
 
   Glib::RefPtr< Gdk::GLContext > on_create_context();
   bool on_render(const Glib::RefPtr< Gdk::GLContext >&);

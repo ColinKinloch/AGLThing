@@ -4,6 +4,12 @@
 #include <giomm/file.h>
 #include <iostream>
 
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+
 using namespace std;
 
 GLuint Renderer::createShader(GLenum type, std::string uri) {
@@ -49,14 +55,9 @@ void Renderer::init_gl() {
   GLuint vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
   GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslf");
 
-  GLuint program = createProgram({vertexShader, fragmentShader});
+  program = createProgram({vertexShader, fragmentShader});
 
   glUseProgram(program);
-
-  unsigned char nVAO = 1;
-  vao = new GLuint[nVAO];
-  glGenVertexArrays(nVAO, vao);
-  glBindVertexArray(vao[0]);
 
   attributes = {
     { -1, "position" },
@@ -64,14 +65,35 @@ void Renderer::init_gl() {
     { -1, "colour" }
   };
 
+  uniforms = {
+    { "MODELVIEWINVERSETRANSPOSE", { -1, "normal" } },
+    { "MODELVIEWPROJECTION", { -1, "mvp" } }
+  };
+
   for(auto it = attributes.begin(); it != attributes.end(); ++it) it->id = glGetAttribLocation(program, it->name.c_str());
+  for(auto it = uniforms.begin(); it != uniforms.end(); ++it) it->second.id = glGetUniformLocation(program, it->second.name.c_str());
+
+  glm::mat4 mvm = glm::mat4_cast(glm::quat());
+  mvm = glm::translate(mvm, glm::vec3(0, 0, -5));
+  mvm = glm::scale(mvm, glm::vec3());
+  glm::mat3 normalm = glm::inverseTranspose(glm::mat3(mvm));
+  glm::mat4 proj = glm::ortho(-1, 1, -1, 1, -1, 1);
+  glm::mat4 mvpm = proj * mvm;
+
+  glUniformMatrix3fv(uniforms["MODELVIEWINVERSETRANSPOSE"].id, 1, GL_FALSE, glm::value_ptr(normalm));
+  glUniformMatrix4fv(uniforms["MODELVIEWPROJECTION"].id, 1, GL_FALSE, glm::value_ptr(mvpm));
+
+  unsigned char nVAO = 1;
+  vao = new GLuint[nVAO];
+  glGenVertexArrays(nVAO, vao);
+  glBindVertexArray(vao[0]);
 
   unsigned char nBuffers = 2;
   buffers = new GLuint[nBuffers];
   std::vector<Vertex> vertices = {
-    {{-.5, 0, 0, 1}, {1, 0, 1}, {1, 0, 1, 1}},
-    {{.5, 0, 0, 1}, {1, 1, 0}, {1, 1, 0, 1}},
-    {{0, 1, 0, 1}, {0, 1, 1}, {0, 1, 1, 1}}
+    {{-.5, 0, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
+    {{.5, 0, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
+    {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}}
   };
   std::vector<unsigned char> indices = {
     1, 2, 3
@@ -115,11 +137,13 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   gl->make_current();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  glUseProgram(program);
+
+  glBindVertexArray(vao[0]);
   glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 
   size_t size = sizeof(Vertex);
-  glBindVertexArray(vao[0]);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, position));
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
@@ -138,22 +162,29 @@ void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
   {
     unsigned char l = 0;
+    Glib::ustring sev;
     switch (severity) {
       case GL_DEBUG_SEVERITY_HIGH:
         l = 0;
+        sev = "\x1b[31m☷";
         break;
       case GL_DEBUG_SEVERITY_MEDIUM:
         l = 1;
+        sev = "\x1b[33m☶";
         break;
       case GL_DEBUG_SEVERITY_LOW:
         l = 2;
+        sev = "\x1b[32m☵";
         break;
       case GL_DEBUG_SEVERITY_NOTIFICATION:
         l = 3;
+        sev = "\x1b[34m♨";
         break;
       default:
         l = 0;
+        sev = "\x1b[36m🕴";
     }
+    sev += "\x1b[0m";
     //Discard non issues
     if(l > 2) return;
     std::string s;
@@ -211,5 +242,5 @@ void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
       default:
         t = "Unknown";
     }
-    cout<<"GL "<<s<<' '<<t<<": "<<message<<endl;
+    cout<<sev<<" GL "<<s<<' '<<t<<": "<<message<<endl;
   }
