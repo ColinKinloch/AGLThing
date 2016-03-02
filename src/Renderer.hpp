@@ -4,7 +4,9 @@
 #include <gtkmm/builder.h>
 
 #include <epoxy/gl.h>
+
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 struct Vertex {
   glm::vec4 position;
@@ -37,6 +39,15 @@ protected:
   GLuint* buffers;
   std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;
+
+  glm::quat orientation;
+  glm::vec3 position;
+
+  glm::mat3 normalMatrix;
+  glm::mat4 projectionMatrix;
+
+  glm::mat4 modelViewMatrix;
+  glm::mat4 modelViewProjectionMatrix;
 
   Glib::RefPtr< Gdk::GLContext > on_create_context();
   bool on_render(const Glib::RefPtr< Gdk::GLContext >&);

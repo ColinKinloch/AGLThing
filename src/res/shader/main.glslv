@@ -1,7 +1,7 @@
 #version 300 es
 precision mediump float;
 
-uniform mat4 mvp;
+uniform mat4 modelViewProjectionMatrix;
 uniform mat3 normalMatrix;
 
 in vec4 position;
@@ -14,5 +14,5 @@ out vec3 vNormal;
 void main(void) {
   vColour = colour;
   vNormal = normal * normalMatrix;
-  gl_Position = position;
+  gl_Position = modelViewProjectionMatrix * position;
 }

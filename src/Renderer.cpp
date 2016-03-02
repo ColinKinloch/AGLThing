@@ -4,7 +4,6 @@
 #include <giomm/file.h>
 #include <iostream>
 
-#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
@@ -96,8 +95,8 @@ void Renderer::init_gl() {
   };
 
   uniforms = {
-    { "MODELVIEWINVERSETRANSPOSE", { -1, "normal" } },
-    { "MODELVIEWPROJECTION", { -1, "mvp" } }
+    { "MODELVIEWINVERSETRANSPOSE", { -1, "normalMatrix" } },
+    { "MODELVIEWPROJECTION", { -1, "modelViewProjectionMatrix" } }
   };
 
   for(auto&& attribute: attributes)
@@ -105,15 +104,8 @@ void Renderer::init_gl() {
   for(auto&& uniform: uniforms)
     uniform.second.id = glGetUniformLocation(program, uniform.second.name.c_str());
 
-  glm::mat4 mvm = glm::mat4_cast(glm::quat());
-  mvm = glm::translate(mvm, glm::vec3(0, 0, 0));
-  mvm = glm::scale(mvm, glm::vec3(1, 1, 1));
-  glm::mat3 normalm = glm::inverseTranspose(glm::mat3(mvm));
-  glm::mat4 proj = glm::ortho(-1, 1, -1, 1, -1, 1);
-  glm::mat4 mvpm = proj * mvm;
-
-  glUniformMatrix3fv(uniforms["MODELVIEWINVERSETRANSPOSE"].id, 1, GL_FALSE, glm::value_ptr(normalm));
-  glUniformMatrix4fv(uniforms["MODELVIEWPROJECTION"].id, 1, GL_FALSE, glm::value_ptr(mvpm));
+  position = glm::vec3(0, 0, 0);
+  orientation = glm::quat(0, 0, 0, 1);
 
   unsigned char nVAO = 1;
   vao = new GLuint[nVAO];
@@ -123,18 +115,25 @@ void Renderer::init_gl() {
   unsigned char nBuffers = 2;
   buffers = new GLuint[nBuffers];
   std::vector<Vertex> vertices = {
-    {{-.5, 0, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
-    {{.5, 0, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
+    {{-1, -1, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
+    {{1, -1, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
     {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}}
   };
   std::vector<unsigned char> indices = {
-    1, 2, 3
+    0, 1, 2
   };
   glGenBuffers(nBuffers, buffers);
   glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned char), indices.data(), GL_STATIC_DRAW);
+
+  for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
+  size_t size = sizeof(Vertex);
+  glVertexAttribPointer(attributes["position"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, position));
+  glVertexAttribPointer(attributes["normal"].id, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
+  glVertexAttribPointer(attributes["colour"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
+  for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 }
 
 bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
@@ -143,17 +142,23 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
 
   glUseProgram(program);
 
+  modelViewMatrix = glm::mat4_cast(orientation);
+  modelViewMatrix = glm::translate(modelViewMatrix, position);
+  modelViewMatrix = glm::scale(modelViewMatrix, glm::vec3(1, 1, 1));
+
+  normalMatrix = glm::inverseTranspose(glm::mat3(modelViewMatrix));
+  projectionMatrix = glm::ortho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
+  modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
+
+  glUniformMatrix3fv(uniforms["MODELVIEWINVERSETRANSPOSE"].id, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+  glUniformMatrix4fv(uniforms["MODELVIEWPROJECTION"].id, 1, GL_FALSE, glm::value_ptr(modelViewProjectionMatrix));
+
   glBindVertexArray(vao[0]);
   glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 
-  size_t size = sizeof(Vertex);
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
-  glVertexAttribPointer(attributes["position"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, position));
-  glVertexAttribPointer(attributes["normal"].id, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
-  glVertexAttribPointer(attributes["colour"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
-
-  glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, nullptr);
+  glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 
   return true;

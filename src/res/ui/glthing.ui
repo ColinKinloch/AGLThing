@@ -18,7 +18,7 @@
         </object>
       </child>
       <child>
-        <object class="GtkButton">
+        <object class="GtkMenuButton">
           <property name="visible">True</property>
           <child>
             <object class="GtkImage">
