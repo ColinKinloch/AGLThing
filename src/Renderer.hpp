@@ -35,7 +35,7 @@ protected:
   GLuint program;
   GLuint* vao;
   GLuint* buffers;
-  std::vector<Attribute> attributes;
+  std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;
 
   Glib::RefPtr< Gdk::GLContext > on_create_context();

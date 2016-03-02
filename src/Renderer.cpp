@@ -48,6 +48,36 @@ Renderer::Renderer(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& re
   : Gtk::GLArea(cobject) {}
 Renderer::Renderer(): Gtk::GLArea() {}
 
+Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
+  Glib::RefPtr< Gdk::GLContext > gl;
+  try {
+    gl = this->get_window()->create_gl_context();
+
+    gl->set_required_version(3, 3);
+    gl->set_debug_enabled(true);
+    gl->realize();
+    gl->make_current();
+
+    int maj = 0;
+    int min = 0;
+    gl->get_version(maj, min);
+    cout<<"Version:"<<maj<<':'<<min<<endl;
+
+    if(epoxy_has_gl_extension ("GL_ARB_debug_output")) {
+      cout<<"Enabling Synchronous GL Debugging"<<endl;
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+      glDebugMessageCallback(debug_callback, nullptr);
+      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
+      0, nullptr, GL_TRUE);
+    }
+
+    init_gl();
+  } catch(Gdk::GLError& err) {
+    cerr<<err.what()<<endl;
+  }
+  return gl;
+}
+
 void Renderer::init_gl() {
   glClearColor(0.0, 0.0, 0.2, 1.0);
   glClearDepth(1.0);
@@ -60,9 +90,9 @@ void Renderer::init_gl() {
   glUseProgram(program);
 
   attributes = {
-    { -1, "position" },
-    { -1, "normal" },
-    { -1, "colour" }
+    { "position", { -1, "position" } },
+    { "normal", { -1, "normal" } },
+    { "colour", { -1, "colour" } }
   };
 
   uniforms = {
@@ -70,12 +100,14 @@ void Renderer::init_gl() {
     { "MODELVIEWPROJECTION", { -1, "mvp" } }
   };
 
-  for(auto it = attributes.begin(); it != attributes.end(); ++it) it->id = glGetAttribLocation(program, it->name.c_str());
-  for(auto it = uniforms.begin(); it != uniforms.end(); ++it) it->second.id = glGetUniformLocation(program, it->second.name.c_str());
+  for(auto&& attribute: attributes)
+    attribute.second.id = glGetAttribLocation(program, attribute.second.name.c_str());
+  for(auto&& uniform: uniforms)
+    uniform.second.id = glGetUniformLocation(program, uniform.second.name.c_str());
 
   glm::mat4 mvm = glm::mat4_cast(glm::quat());
-  mvm = glm::translate(mvm, glm::vec3(0, 0, -5));
-  mvm = glm::scale(mvm, glm::vec3());
+  mvm = glm::translate(mvm, glm::vec3(0, 0, 0));
+  mvm = glm::scale(mvm, glm::vec3(1, 1, 1));
   glm::mat3 normalm = glm::inverseTranspose(glm::mat3(mvm));
   glm::mat4 proj = glm::ortho(-1, 1, -1, 1, -1, 1);
   glm::mat4 mvpm = proj * mvm;
@@ -105,34 +137,6 @@ void Renderer::init_gl() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned char), indices.data(), GL_STATIC_DRAW);
 }
 
-Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
-  Glib::RefPtr< Gdk::GLContext > gl;
-  try {
-    gl = this->get_window()->create_gl_context();
-
-    gl->set_required_version(3, 3);
-    gl->set_debug_enabled(true);
-    gl->realize();
-    gl->make_current();
-
-    int maj = 0;
-    int min = 0;
-    gl->get_version(maj, min);
-    cout<<"Version:"<<maj<<':'<<min<<endl;
-
-    if(epoxy_has_gl_extension ("GL_ARB_debug_output")) {
-      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-      glDebugMessageCallback(debug_callback, nullptr);
-      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
-      0, nullptr, GL_TRUE);
-    }
-
-    init_gl();
-  } catch(Gdk::GLError& err) {
-    cerr<<err.what()<<endl;
-  }
-  return gl;
-}
 bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   gl->make_current();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -144,13 +148,13 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 
   size_t size = sizeof(Vertex);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, position));
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
+  for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
+  glVertexAttribPointer(attributes["position"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, position));
+  glVertexAttribPointer(attributes["normal"].id, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
+  glVertexAttribPointer(attributes["colour"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
 
-  for(auto it = attributes.begin(); it != attributes.end(); ++it) glEnableVertexAttribArray(it->id);
   glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, nullptr);
-  for(auto it = attributes.begin(); it != attributes.end(); ++it) glDisableVertexAttribArray(it->id);
+  for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 
   return true;
 }
