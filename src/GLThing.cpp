@@ -33,7 +33,7 @@ void GLThing::on_startup() {
 
   builder->get_widget_derived("gl-area", area);
 
-  Glib::signal_timeout().connect([&]() -> bool {
+  Glib::signal_timeout().connect([this]() -> bool {
     area->queue_render();
     return true;
   }, (double)1000. / 60.);

@@ -35,6 +35,10 @@ public:
   static void debug_callback(GLenum source, GLenum type, GLuint id,
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
+  glm::quat orientation;
+  glm::vec3 rotation;
+  glm::vec3 position;
+
 protected:
   GLuint program;
   GLuint* vao;
@@ -44,9 +48,8 @@ protected:
   std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;
 
-  glm::quat orientation;
-  glm::vec3 rotation;
-  glm::vec3 position;
+  std::chrono::system_clock::time_point startTime;
+  std::chrono::system_clock::time_point previousTime;
 
   std::thread renderThread;
 

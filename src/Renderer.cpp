@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 
 #include <iostream>
+#include <chrono>
 
 #include <giomm/file.h>
 
@@ -11,7 +12,7 @@
 
 using namespace std;
 
-GLuint Renderer::createShader(GLenum type, std::string uri) {
+GLuint Renderer::createShader(GLenum type, string uri) {
   GLuint shader = glCreateShader(type);
 
   char* shaderSource;
@@ -36,7 +37,7 @@ GLuint Renderer::createShader(GLenum type, std::string uri) {
 
   return shader;
 }
-GLuint Renderer::createProgram(std::vector<GLuint> shaders) {
+GLuint Renderer::createProgram(vector<GLuint> shaders) {
   GLuint program = glCreateProgram();
   for(auto it = shaders.begin(); it != shaders.end(); ++it) glAttachShader(program, *it);
   glLinkProgram(program);
@@ -44,8 +45,12 @@ GLuint Renderer::createProgram(std::vector<GLuint> shaders) {
 }
 
 Renderer::Renderer(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refBuilder)
-  : Gtk::GLArea(cobject) {}
-Renderer::Renderer(): Gtk::GLArea() {}
+  : Gtk::GLArea(cobject) {
+  startTime = chrono::system_clock::now();
+}
+Renderer::Renderer(): Gtk::GLArea() {
+  startTime = chrono::system_clock::now();
+}
 
 Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
   Glib::RefPtr< Gdk::GLContext > gl;
@@ -85,7 +90,7 @@ void Renderer::on_realize() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glClearColor(0.0, 0.0, 0.2, 0.0);
+  glClearColor(0.0, 0.0, 0.0, 0.0);
   glClearDepth(1.0);
 
   vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
@@ -122,12 +127,12 @@ void Renderer::on_realize() {
 
   unsigned char nBuffers = 2;
   buffers = new GLuint[nBuffers];
-  std::vector<Vertex> vertices = {
+  vector<Vertex> vertices = {
     {{-1, -1, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
     {{1, -1, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
     {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}}
   };
-  std::vector<unsigned char> indices = {
+  vector<unsigned char> indices = {
     0, 1, 2
   };
   glGenBuffers(nBuffers, buffers);
@@ -157,12 +162,17 @@ void Renderer::on_unrealize() {
 
 bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   gl->make_current();
+
+  chrono::system_clock::time_point currentTime = chrono::system_clock::now();
+  chrono::system_clock::duration time = currentTime - previousTime;
+  short t = chrono::duration_cast<chrono::milliseconds>(time).count();
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(program);
 
-  rotation.x += 0.5;
-  rotation.y += 0.2;
+  rotation.x += 0.004 * t;
+  rotation.y += 0.00186 * t;
   orientation = glm::angleAxis(rotation.x, glm::vec3(1, 0, 0));
   orientation = glm::rotate(orientation, rotation.y, glm::vec3(0, 1, 0));
   orientation = glm::rotate(orientation, rotation.z, glm::vec3(0, 0, 1));
@@ -184,6 +194,8 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
   glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
+
+  previousTime = currentTime;
 
   return true;
 }
@@ -225,7 +237,7 @@ void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
     sev += "\x1b[0m";
     //Discard non issues
     if(l > 2) return;
-    std::string s;
+    string s;
     switch(source) {
       case GL_DEBUG_SOURCE_API:
         s = "API";
@@ -248,7 +260,7 @@ void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
       default:
         s = "Unknown";
     }
-    std::string t;
+    string t;
     switch(type) {
       case GL_DEBUG_TYPE_ERROR:
         t = "Error";
