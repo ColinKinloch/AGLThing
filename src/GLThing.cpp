@@ -37,8 +37,7 @@ void GLThing::on_startup() {
     area->queue_render();
     return true;
   }, (double)1000. / 60.);
-  //window = new Gtk::ApplicationWindow(Glib::RefPtr<Gtk::Application>(this));
-  //window = new Gtk::ApplicationWindow();
+
   window->set_icon_name("application-x-executable");
 
   this->add_window(*window);

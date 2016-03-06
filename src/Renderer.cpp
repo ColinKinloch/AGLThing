@@ -127,12 +127,12 @@ void Renderer::on_realize() {
 
   unsigned char nBuffers = 2;
   buffers = new GLuint[nBuffers];
-  vector<Vertex> vertices = {
+  vertices = {
     {{-1, -1, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
     {{1, -1, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
-    {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}}
+    {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}},
   };
-  vector<unsigned char> indices = {
+  indices = {
     0, 1, 2
   };
   glGenBuffers(nBuffers, buffers);
@@ -192,7 +192,7 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
-  glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
+  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_BYTE, nullptr);
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 
   previousTime = currentTime;
