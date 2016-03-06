@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/colinkinloch/glthing">
-    <file compressed="true">ui/glthing.ui</file>
+    <file compressed="true">gtk/menus.ui</file>
+    <file compressed="true">ui/main.ui</file>
+    <file compressed="true">ui/about.ui</file>
     <file compressed="true">shader/main.glslv</file>
     <file compressed="true">shader/main.glslf</file>
   </gresource>

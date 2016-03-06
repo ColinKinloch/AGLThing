@@ -1,4 +1,7 @@
-AC_INIT([glthing], [0.0.0], [colin@kinlo.ch], [glthing])
+AC_INIT([glthing],
+        [0.0.0],
+        [colin@kinlo.ch],
+        [glthing])
 
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([config.h])
@@ -9,7 +12,7 @@ AC_PROG_CXX
 AC_LANG([C++])
 AX_CXX_COMPILE_STDCXX_11
 
-AC_PATH_PROG(GLIB_COMPILE_RESOURCES, glib-compile-resources)
+AC_PATH_PROG([GLIB_COMPILE_RESOURCES], [glib-compile-resources])
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror -Wno-portability subdir-objects])
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thread>
+
 #include <gtkmm/glarea.h>
 #include <gtkmm/builder.h>
 
@@ -41,7 +43,10 @@ protected:
   std::map<std::string, Uniform> uniforms;
 
   glm::quat orientation;
+  glm::vec3 rotation;
   glm::vec3 position;
+
+  std::thread renderThread;
 
   glm::mat3 normalMatrix;
   glm::mat4 projectionMatrix;

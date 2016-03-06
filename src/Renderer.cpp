@@ -1,8 +1,8 @@
 #include "Renderer.hpp"
 
-#include <epoxy/gl.h>
-#include <giomm/file.h>
 #include <iostream>
+
+#include <giomm/file.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -49,8 +49,12 @@ Renderer::Renderer(): Gtk::GLArea() {}
 
 Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
   Glib::RefPtr< Gdk::GLContext > gl;
+
+  set_has_alpha(true);
+  set_has_depth_buffer(true);
+
   try {
-    gl = this->get_window()->create_gl_context();
+    gl = get_window()->create_gl_context();
 
     gl->set_required_version(3, 3);
     gl->set_debug_enabled(true);
@@ -78,7 +82,12 @@ Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
 }
 
 void Renderer::init_gl() {
-  glClearColor(0.0, 0.0, 0.2, 1.0);
+  glEnable(GL_ALPHA_TEST);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glClearColor(0.0, 0.0, 0.2, 0.0);
   glClearDepth(1.0);
 
   GLuint vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
@@ -106,6 +115,7 @@ void Renderer::init_gl() {
 
   position = glm::vec3(0, 0, 0);
   orientation = glm::quat(0, 0, 0, 1);
+  rotation = glm::vec3();
 
   unsigned char nVAO = 1;
   vao = new GLuint[nVAO];
@@ -142,12 +152,17 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
 
   glUseProgram(program);
 
+  rotation.x += 0.5;
+  rotation.y += 0.2;
+  orientation = glm::angleAxis(rotation.x, glm::vec3(1, 0, 0));
+  orientation = glm::rotate(orientation, rotation.y, glm::vec3(0, 1, 0));
+  orientation = glm::rotate(orientation, rotation.z, glm::vec3(0, 0, 1));
+
   modelViewMatrix = glm::mat4_cast(orientation);
   modelViewMatrix = glm::translate(modelViewMatrix, position);
   modelViewMatrix = glm::scale(modelViewMatrix, glm::vec3(1, 1, 1));
 
   normalMatrix = glm::inverseTranspose(glm::mat3(modelViewMatrix));
-  projectionMatrix = glm::ortho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
   modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
 
   glUniformMatrix3fv(uniforms["MODELVIEWINVERSETRANSPOSE"].id, 1, GL_FALSE, glm::value_ptr(normalMatrix));
@@ -164,8 +179,13 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   return true;
 }
 void Renderer::on_resize(int width, int height) {
-  this->make_current();
+  make_current();
   glViewport(0, 0, width, height);
+  float s = 3;
+  float r = (float)width / height;
+  float w = s * r / 2;
+  float h = s / 2;
+  projectionMatrix = glm::ortho(-w, w, h, -h, -10.f, 10.f);
 }
 void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
