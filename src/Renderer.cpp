@@ -56,32 +56,30 @@ Glib::RefPtr< Gdk::GLContext > Renderer::on_create_context() {
   try {
     gl = get_window()->create_gl_context();
 
-    gl->set_required_version(3, 3);
-    gl->set_debug_enabled(true);
+    int maj, min;
+    get_required_version(maj, min);
+    gl->set_required_version (maj, min);
     gl->realize();
-    gl->make_current();
-
-    int maj = 0;
-    int min = 0;
-    gl->get_version(maj, min);
-    cout<<"Version:"<<maj<<':'<<min<<endl;
-
-    if(epoxy_has_gl_extension ("GL_ARB_debug_output")) {
-      cout<<"Enabling Synchronous GL Debugging"<<endl;
-      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-      glDebugMessageCallback(debug_callback, nullptr);
-      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
-      0, nullptr, GL_TRUE);
-    }
-
-    init_gl();
   } catch(Gdk::GLError& err) {
     cerr<<err.what()<<endl;
   }
   return gl;
 }
 
-void Renderer::init_gl() {
+void Renderer::on_realize() {
+  set_required_version(3, 3);
+
+  GLArea::on_realize();
+  make_current();
+
+  if(epoxy_has_gl_extension ("GL_ARB_debug_output")) {
+    cout<<"Enabling Synchronous GL Debugging"<<endl;
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(debug_callback, nullptr);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
+    0, nullptr, GL_TRUE);
+  }
+
   glEnable(GL_ALPHA_TEST);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -90,8 +88,8 @@ void Renderer::init_gl() {
   glClearColor(0.0, 0.0, 0.2, 0.0);
   glClearDepth(1.0);
 
-  GLuint vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
-  GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslf");
+  vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
+  fragmentShader = createShader(GL_FRAGMENT_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslf");
 
   program = createProgram({vertexShader, fragmentShader});
 
@@ -144,6 +142,17 @@ void Renderer::init_gl() {
   glVertexAttribPointer(attributes["normal"].id, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
   glVertexAttribPointer(attributes["colour"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
+}
+
+void Renderer::on_unrealize() {
+  cout<<"CleanGL"<<endl;
+  make_current();
+  glDeleteBuffers(2, buffers);
+  glDeleteProgram(program);
+  glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);
+
+  Gtk::GLArea::on_unrealize();
 }
 
 bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {

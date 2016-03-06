@@ -2,6 +2,8 @@
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/aboutdialog.h>
 
+#include "Renderer.hpp"
+
 class GLThing: public Gtk::Application {
 public:
   static Glib::RefPtr<GLThing> create() {
@@ -9,6 +11,7 @@ public:
   }
 protected:
   Gtk::ApplicationWindow* window;
+  Renderer* area;
   Gtk::AboutDialog* aboutDialog;
 
   void on_startup();

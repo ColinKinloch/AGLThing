@@ -39,6 +39,8 @@ protected:
   GLuint program;
   GLuint* vao;
   GLuint* buffers;
+  GLuint vertexShader;
+  GLuint fragmentShader;
   std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;
 
@@ -54,10 +56,13 @@ protected:
   glm::mat4 modelViewMatrix;
   glm::mat4 modelViewProjectionMatrix;
 
-  Glib::RefPtr< Gdk::GLContext > on_create_context();
+
   bool on_render(const Glib::RefPtr< Gdk::GLContext >&);
   void on_resize(int width, int height);
 
-  void init_gl();
+  Glib::RefPtr< Gdk::GLContext > on_create_context();
+
+  void on_realize();
+  void on_unrealize();
 
 };

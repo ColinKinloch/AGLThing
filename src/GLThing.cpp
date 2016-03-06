@@ -31,10 +31,9 @@ void GLThing::on_startup() {
 
   aboutDialog->set_transient_for(*window);
 
-  Renderer* area;
   builder->get_widget_derived("gl-area", area);
 
-  Glib::signal_timeout().connect([area]() -> bool {
+  Glib::signal_timeout().connect([&]() -> bool {
     area->queue_render();
     return true;
   }, (double)1000. / 60.);
