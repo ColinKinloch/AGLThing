@@ -45,8 +45,12 @@ protected:
   GLuint* buffers;
   GLuint vertexShader;
   GLuint fragmentShader;
+
   std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;
+
+  std::vector<unsigned char> indices;
+  std::vector<Vertex> vertices;
 
   std::chrono::system_clock::time_point startTime;
   std::chrono::system_clock::time_point previousTime;
