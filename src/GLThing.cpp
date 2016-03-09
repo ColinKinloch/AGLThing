@@ -8,12 +8,22 @@
 #include <gtkmm/glarea.h>
 #include <gtkmm/builder.h>
 
+#include "json.hpp"
+
 #include "GLThing-resources.h"
 
 #include "GLThing.hpp"
 #include "Renderer.hpp"
 
+#include <cstdint>
+
 using namespace std;
+using namespace nlohmann;
+
+struct glTFb {
+  json scene;
+  map<string, uint8_t*> buffers;
+};
 
 GLThing::GLThing(): Gtk::Application("org.colinkinloch.GLThing") {
   set_resource_base_path("/org/colinkinloch/glthing");
@@ -51,6 +61,60 @@ void GLThing::on_startup() {
 
   window->add(*area);*/
   window->show();
+
+  auto stream = Gio::File::create_for_uri("resource:///org/colinkinloch/glthing/model/duck.glb")->read();
+
+  char* magic = new char[4];
+  uint8_t* body;
+  stream->read(magic, 4);
+  if(string(magic, 4) != "glTF") throw "File not glTF";
+
+  uint32_t version;
+  stream->read(&version, 4);
+  switch(version) {
+    case 1:
+      break;
+    default:
+      cerr<<"Formats other than glTF v1.0 are not supported."<<endl;
+  }
+
+  uint32_t length;
+  uint32_t sceneLength;
+  stream->read(&length, 4);
+  stream->read(&sceneLength, 4);
+
+  uint32_t sceneFormat;
+  stream->read(&sceneFormat, 4);
+  switch(sceneFormat) {
+    case 0:
+      break;
+    default:
+      throw "Only JSON scenes are supported";
+  }
+  char* sceneData = new char [sceneLength];
+  stream->read(sceneData, sceneLength);
+
+  glTFb gltf;
+  gltf.scene = json::parse(sceneData);
+
+  size_t bodyLength = length - stream->tell();
+  body = new uint8_t[bodyLength];
+  stream->read(body, bodyLength);
+
+  gltf.buffers.insert({"binary_glTF", body});
+  {
+    json b = gltf.scene["buffers"];
+    for(json::iterator it = b.begin(); it != b.end(); ++it) {
+      if(it.key() == "binary_glTF") continue;
+      cout<<it.key()<<endl;
+    }
+  }
+  {
+    json bv = gltf.scene["bufferViews"];
+    for(json::iterator it = bv.begin(); it != bv.end(); ++it) {
+      cout<<it.key()<<endl;
+    }
+  }
 }
 
 void GLThing::show_about() {
