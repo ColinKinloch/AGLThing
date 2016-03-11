@@ -7,5 +7,7 @@
     <file compressed="true">shader/main.glslv</file>
     <file compressed="true">shader/main.glslf</file>
     <file compressed="true">model/duck.glb</file>
+    <file compressed="true">model/duck.gltf</file>
+    <file compressed="true">model/duck.bin</file>
   </gresource>
 </gresources>
