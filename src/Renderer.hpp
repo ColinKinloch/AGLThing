@@ -10,6 +10,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <cstdint>
+#include "json.hpp"
+
 struct Vertex {
   glm::vec4 position;
   glm::vec3 normal;
@@ -22,6 +25,12 @@ struct Attribute {
 struct Uniform {
   GLint id;
   std::string name;
+};
+
+struct glTFb {
+  nlohmann::json scene;
+  std::map<std::string, std::vector<uint8_t>> buffers;
+  Glib::RefPtr<Gio::File> file;
 };
 
 class Renderer: public Gtk::GLArea {
@@ -38,6 +47,9 @@ public:
   glm::quat orientation;
   glm::vec3 rotation;
   glm::vec3 position;
+
+  glTFb gltf;
+  void set_gltf(glTFb newgltf);
 
 protected:
   GLuint program;

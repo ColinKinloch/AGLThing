@@ -18,8 +18,9 @@
         </object>
       </child>
       <child>
-        <object class="GtkMenuButton">
+        <object class="GtkButton">
           <property name="visible">True</property>
+          <property name="action-name">app.open</property>
           <child>
             <object class="GtkImage">
               <property name="visible">True</property>

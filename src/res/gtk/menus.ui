@@ -2,6 +2,12 @@
   <menu id="app-menu">
     <section>
       <item>
+        <attribute name="action">app.open</attribute>
+        <attribute name="label" translatable="yes">_Open</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="action">app.about</attribute>
         <attribute name="label" translatable="yes">_About</attribute>
       </item>

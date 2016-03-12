@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 using namespace std;
+using namespace nlohmann;
 
 GLuint Renderer::createShader(GLenum type, string uri) {
   GLuint shader = glCreateShader(type);
@@ -147,6 +148,13 @@ void Renderer::on_realize() {
   glVertexAttribPointer(attributes["normal"].id, 3, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, normal));
   glVertexAttribPointer(attributes["colour"].id, 4, GL_FLOAT, GL_FALSE, size, (void*) offsetof(struct Vertex, colour));
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
+
+  {
+    auto bv = gltf.scene["bufferViews"];
+    for(auto it = bv.begin(); it != bv.end(); ++it) {
+      cout<<it.key()<<endl;
+    }
+  }
 }
 
 void Renderer::on_unrealize() {
@@ -208,6 +216,24 @@ void Renderer::on_resize(int width, int height) {
   float h = s / 2;
   projectionMatrix = glm::ortho(-w, w, h, -h, -10.f, 10.f);
 }
+
+void Renderer::set_gltf(glTFb newgltf) {
+  gltf = newgltf;
+  make_current();
+  auto bvs = gltf.scene["bufferViews"];
+  for(auto it = bvs.begin(); it != bvs.end(); ++it) {
+    json bv = it.value();
+    auto target = bv["target"];
+    if(target.is_null()) continue;
+    cout<<it.key()<<':'<<target<<endl;
+    GLuint buff;
+    glGenBuffers(1, buffers);
+    glBindBuffer(target, buffers[0]);
+    auto b = gltf.buffers[bv["buffer"]];
+    glBufferData(target, b.size() * sizeof(uint8_t), b.data(), GL_STATIC_DRAW);
+  }
+}
+
 void Renderer::debug_callback(GLenum source, GLenum type, GLuint id,
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
   {
