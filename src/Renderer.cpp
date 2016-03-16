@@ -126,10 +126,7 @@ void Renderer::on_realize() {
   for(auto&& uniform: uniforms)
     uniform.second.id = glGetUniformLocation(program, uniform.second.name.c_str());
 
-  position = glm::vec3(0, 0, -0.25);
-  orientation = glm::quat(0, 0, 0, 1);
-  rotation = glm::vec3(0);
-  scaling = glm::vec3(1);
+  camera.position = glm::vec3(0, 0, -1);
 
   unsigned char nVAO = 1;
   vao = new GLuint[nVAO];
@@ -137,7 +134,7 @@ void Renderer::on_realize() {
   glBindVertexArray(vao[0]);
 
   glm::vec4 grey = {0.7, 0.7, 0.7, 1};
-  /*vertices = {
+  vertices = {
     {{0, 0, -0.2, 1}, {0, 0, -0.2}, grey}, // 0
     {{0, 0, 0.2, 1}, {0, 0, 0.2}, grey},  // 1
     {{0, -0.2, 0, 1}, {0.2, -0.2, 0}, grey},    // 2
@@ -154,8 +151,9 @@ void Renderer::on_realize() {
     0, 2, 5,
     0, 3, 4,
     3, 0, 5,
-  };*/
+  };
 
+  /*
   int a = 30;
   float b = 1;
   int i = 0;
@@ -171,7 +169,7 @@ void Renderer::on_realize() {
     indices.push_back(i++);
     vertices.push_back({{m, y, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}});
     indices.push_back(i++);
-  }
+  }*/
 
   glGenBuffers(1, &buffer);
   glBindBuffer(GL_ARRAY_BUFFER, buffer);
@@ -218,20 +216,17 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
 
   glUseProgram(program);
 
-  //rotation.x += 0.004 * t;
-  //rotation.y += 0.00186 * t;
-  //rotation.z += 0.0001 * t;
-  orientation = glm::angleAxis(rotation.x, glm::vec3(1, 0, 0));
-  orientation = glm::rotate(orientation, rotation.y, glm::vec3(0, 1, 0));
-  orientation = glm::rotate(orientation, rotation.z, glm::vec3(0, 0, 1));
+  rotation.x += 0.004 * t;
+  rotation.y += 0.00186 * t;
+  rotation.z += 0.0001 * t;
+  object.orientation = glm::angleAxis(rotation.x, glm::vec3(1, 0, 0));
+  object.orientation = glm::rotate(object.orientation, rotation.y, glm::vec3(0, 1, 0));
+  object.orientation = glm::rotate(object.orientation, rotation.z, glm::vec3(0, 0, 1));
 
-  modelViewMatrix = glm::mat4_cast(orientation);
-  //modelViewMatrix = glm::lookAt(position, glm::vec3(0), glm::vec3(0, 0, 1));
-  modelViewMatrix = glm::translate(modelViewMatrix, position);
-  modelViewMatrix = glm::scale(modelViewMatrix, scaling);
+  modelViewMatrix = object.getMatrix();
 
   normalMatrix = glm::inverseTranspose(glm::mat3(modelViewMatrix));
-  modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
+  modelViewProjectionMatrix = camera.getMatrix() * modelViewMatrix;
 
   glUniformMatrix3fv(uniforms["MODELVIEWINVERSETRANSPOSE"].id, 1, GL_FALSE, glm::value_ptr(normalMatrix));
   glUniformMatrix4fv(uniforms["MODELVIEWPROJECTION"].id, 1, GL_FALSE, glm::value_ptr(modelViewProjectionMatrix));
@@ -241,7 +236,7 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
 
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
-  glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_BYTE, nullptr);
+  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_BYTE, nullptr);
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 
   previousTime = currentTime;
@@ -255,8 +250,8 @@ void Renderer::on_resize(int width, int height) {
   float r = (float)width / height;
   float w = s * r / 2;
   float h = s / 2;
-  //projectionMatrix = glm::ortho(-w, w, h, -h, -10.f, 10.f);
-  projectionMatrix = glm::perspective(1.f, r, 0.01f, 100.f);
+  //camera.projection = glm::ortho(-w, w, h, -h, -1000.f, 1000.f);
+  camera.projection = glm::perspective(1.5f, r, 0.1f, 100.f);
 }
 
 void Renderer::set_gltf(glTFb newgltf) {

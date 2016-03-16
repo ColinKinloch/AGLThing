@@ -13,6 +13,9 @@
 #include <cstdint>
 #include <json.hpp>
 
+#include "Node.hpp"
+#include "Camera.hpp"
+
 struct Vertex {
   glm::vec4 position;
   glm::vec3 normal;
@@ -43,6 +46,9 @@ public:
 
   static void debug_callback(GLenum source, GLenum type, GLuint id,
   GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+
+  Node object;
+  Camera camera;
 
   glm::quat orientation;
   glm::vec3 rotation;
