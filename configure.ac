@@ -20,6 +20,12 @@ PKG_CHECK_MODULES([SYSTEM], [giomm-2.4])
 PKG_CHECK_MODULES([GUI], [gtkmm-3.0])
 PKG_CHECK_MODULES([GL], [epoxy])
 
+AC_CHECK_HEADERS([glm/glm.hpp], [],
+  [AC_MSG_FAILURE([glm header missing])])
+
+AC_CHECK_HEADER([json.hpp], [],
+  [AC_MSG_FAILURE([nlohmanns json header missing])])
+
 AC_CONFIG_FILES([
   Makefile
   src/res/glthing.gresource.xml

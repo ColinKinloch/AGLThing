@@ -11,7 +11,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include <cstdint>
-#include "json.hpp"
+#include <json.hpp>
 
 struct Vertex {
   glm::vec4 position;
