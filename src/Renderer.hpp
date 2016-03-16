@@ -47,6 +47,7 @@ public:
   glm::quat orientation;
   glm::vec3 rotation;
   glm::vec3 position;
+  glm::vec3 scaling;
 
   glTFb gltf;
   void set_gltf(glTFb newgltf);
@@ -54,9 +55,16 @@ public:
 protected:
   GLuint program;
   GLuint* vao;
-  GLuint* buffers;
+  GLuint buffer;
+  GLuint elementBuffer;
+
   GLuint vertexShader;
+  GLuint geometryShader;
   GLuint fragmentShader;
+
+  std::map<std::string, GLuint> buffers;
+  std::map<std::string, GLuint> vaos;
+  std::map<std::string, GLuint> programs;
 
   std::map<std::string, Attribute> attributes;
   std::map<std::string, Uniform> uniforms;

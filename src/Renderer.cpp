@@ -91,13 +91,22 @@ void Renderer::on_realize() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
+
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glClearDepth(1.0);
 
   vertexShader = createShader(GL_VERTEX_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslv");
+  //geometryShader = createShader(GL_GEOMETRY_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslg");
   fragmentShader = createShader(GL_FRAGMENT_SHADER, "resource:///org/colinkinloch/glthing/shader/main.glslf");
 
-  program = createProgram({vertexShader, fragmentShader});
+  program = createProgram({
+    vertexShader,
+    //geometryShader,
+    fragmentShader
+  });
 
   glUseProgram(program);
 
@@ -117,29 +126,59 @@ void Renderer::on_realize() {
   for(auto&& uniform: uniforms)
     uniform.second.id = glGetUniformLocation(program, uniform.second.name.c_str());
 
-  position = glm::vec3(0, 0, 0);
+  position = glm::vec3(0, 0, -0.25);
   orientation = glm::quat(0, 0, 0, 1);
-  rotation = glm::vec3();
+  rotation = glm::vec3(0);
+  scaling = glm::vec3(1);
 
   unsigned char nVAO = 1;
   vao = new GLuint[nVAO];
   glGenVertexArrays(nVAO, vao);
   glBindVertexArray(vao[0]);
 
-  unsigned char nBuffers = 2;
-  buffers = new GLuint[nBuffers];
-  vertices = {
-    {{-1, -1, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}},
-    {{1, -1, 0, 1}, {0, 0, 1}, {1, 1, 0, 1}},
-    {{0, 1, 0, 1}, {0, 0, 1}, {0, 1, 1, 1}},
+  glm::vec4 grey = {0.7, 0.7, 0.7, 1};
+  /*vertices = {
+    {{0, 0, -0.2, 1}, {0, 0, -0.2}, grey}, // 0
+    {{0, 0, 0.2, 1}, {0, 0, 0.2}, grey},  // 1
+    {{0, -0.2, 0, 1}, {0.2, -0.2, 0}, grey},    // 2
+    {{0, 1, 0, 1}, {0, 1, 0}, grey},  // 3
+    {{0.3, 0, 0, 1}, {1, 0.3, 0}, grey}, // 4
+    {{-0.3, 0, 0, 1}, {-1, -0.3, 0}, grey}, // 5
   };
   indices = {
-    0, 1, 2
-  };
-  glGenBuffers(nBuffers, buffers);
-  glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    3, 1, 4,
+    1, 3, 5,
+    1, 2, 4,
+    2, 1, 5,
+    2, 0, 4,
+    0, 2, 5,
+    0, 3, 4,
+    3, 0, 5,
+  };*/
+
+  int a = 30;
+  float b = 1;
+  int i = 0;
+  float m = a * b;
+  for(float x = -m; x < m; x += b) {
+    vertices.push_back({{x, -m, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}});
+    indices.push_back(i++);
+    vertices.push_back({{x, m, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}});
+    indices.push_back(i++);
+  }
+  for(float y = -m; y < m; y += b) {
+    vertices.push_back({{-m, y, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}});
+    indices.push_back(i++);
+    vertices.push_back({{m, y, 0, 1}, {0, 0, 1}, {1, 0, 1, 1}});
+    indices.push_back(i++);
+  }
+
+  glGenBuffers(1, &buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+
+  glGenBuffers(1, &elementBuffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned char), indices.data(), GL_STATIC_DRAW);
 
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
@@ -160,7 +199,7 @@ void Renderer::on_realize() {
 void Renderer::on_unrealize() {
   cout<<"CleanGL"<<endl;
   make_current();
-  glDeleteBuffers(2, buffers);
+  for(auto b: buffers) glDeleteBuffers(1, &b.second);
   glDeleteProgram(program);
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
@@ -179,15 +218,17 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
 
   glUseProgram(program);
 
-  rotation.x += 0.004 * t;
-  rotation.y += 0.00186 * t;
+  //rotation.x += 0.004 * t;
+  //rotation.y += 0.00186 * t;
+  //rotation.z += 0.0001 * t;
   orientation = glm::angleAxis(rotation.x, glm::vec3(1, 0, 0));
   orientation = glm::rotate(orientation, rotation.y, glm::vec3(0, 1, 0));
   orientation = glm::rotate(orientation, rotation.z, glm::vec3(0, 0, 1));
 
   modelViewMatrix = glm::mat4_cast(orientation);
+  //modelViewMatrix = glm::lookAt(position, glm::vec3(0), glm::vec3(0, 0, 1));
   modelViewMatrix = glm::translate(modelViewMatrix, position);
-  modelViewMatrix = glm::scale(modelViewMatrix, glm::vec3(1, 1, 1));
+  modelViewMatrix = glm::scale(modelViewMatrix, scaling);
 
   normalMatrix = glm::inverseTranspose(glm::mat3(modelViewMatrix));
   modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
@@ -196,11 +237,11 @@ bool Renderer::on_render(const Glib::RefPtr< Gdk::GLContext >& gl) {
   glUniformMatrix4fv(uniforms["MODELVIEWPROJECTION"].id, 1, GL_FALSE, glm::value_ptr(modelViewProjectionMatrix));
 
   glBindVertexArray(vao[0]);
-  glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
 
   for(auto attribute: attributes) glEnableVertexAttribArray(attribute.second.id);
-  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_BYTE, nullptr);
+  glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_BYTE, nullptr);
   for(auto attribute: attributes) glDisableVertexAttribArray(attribute.second.id);
 
   previousTime = currentTime;
@@ -214,7 +255,8 @@ void Renderer::on_resize(int width, int height) {
   float r = (float)width / height;
   float w = s * r / 2;
   float h = s / 2;
-  projectionMatrix = glm::ortho(-w, w, h, -h, -10.f, 10.f);
+  //projectionMatrix = glm::ortho(-w, w, h, -h, -10.f, 10.f);
+  projectionMatrix = glm::perspective(1.f, r, 0.01f, 100.f);
 }
 
 void Renderer::set_gltf(glTFb newgltf) {
@@ -227,10 +269,11 @@ void Renderer::set_gltf(glTFb newgltf) {
     if(target.is_null()) continue;
     cout<<it.key()<<':'<<target<<endl;
     GLuint buff;
-    glGenBuffers(1, buffers);
-    glBindBuffer(target, buffers[0]);
+    glGenBuffers(1, &buff);
+    glBindBuffer(target, buff);
     auto b = gltf.buffers[bv["buffer"]];
     glBufferData(target, b.size() * sizeof(uint8_t), b.data(), GL_STATIC_DRAW);
+    buffers.insert({it.key(), buff});
   }
 }
 

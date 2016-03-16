@@ -40,7 +40,7 @@ void GLThing::on_startup() {
   Glib::signal_timeout().connect([this]() -> bool {
     area->queue_render();
     return true;
-  }, (double)1000. / 60.);
+  }, (double) 1000. / 60.);
 
   window->set_icon_name("application-x-executable");
 
